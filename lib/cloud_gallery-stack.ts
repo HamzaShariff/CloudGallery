@@ -1,12 +1,15 @@
 import {Stack, StackProps, CfnOutput, RemovalPolicy} from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
+import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 
 export class CloudGalleryStack extends Stack {
@@ -57,6 +60,34 @@ export class CloudGalleryStack extends Stack {
     const images = api.root.addResource('images');
     images.addMethod('GET', new apigw.LambdaIntegration(apiFn))
     images.addMethod('POST', new apigw.LambdaIntegration(apiFn))
+
+    const processFn = new PythonFunction(this, 'ProcessFn', {
+      entry: path.join(__dirname, '../lambdas/process'),
+      runtime: lambda.Runtime.PYTHON_3_11,
+      index: 'process.py',
+      handler: 'handler',
+      memorySize: 256,
+      timeout: Duration.seconds(30),
+      environment: {
+        TABLE: table.tableName,
+        BUCKET: galleryBucket.bucketName
+      }
+    });
+
+    galleryBucket.grantReadWrite(processFn);
+    table.grantWriteData(processFn)
+    processFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['rekognition:DetectLabels'],
+        resources: ['*']
+      })
+    );
+
+    galleryBucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED_PUT,
+      new s3n.LambdaDestination(processFn),
+      { suffix: '.jpg' }
+    );
 
     new CfnOutput(this, 'GalleryBucketName', {
       value: galleryBucket.bucketName,

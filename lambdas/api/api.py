@@ -17,7 +17,7 @@ def handler(event, _):
             Params={'Bucket': bucket, 'Key': f"{image_id}.jpg"},
             ExpiresIn=900
         )
-        table.put_item(Item={'imageId': image_id, 'status': 'UPLOADING\n'})
+        table.put_item(Item={'imageId': image_id, 'status': 'UPLOADING'})
         return _resp(201, {'imageId': image_id, 'uploadUrl': presigned})
     
     return _resp(405, {'error': "Method not allowed"})
