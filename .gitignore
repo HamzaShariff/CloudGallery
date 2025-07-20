@@ -8,3 +8,4 @@ frontend/dist/
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+frontend/.env.local

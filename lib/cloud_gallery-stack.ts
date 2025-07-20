@@ -21,6 +21,12 @@ export class CloudGalleryStack extends Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
+    galleryBucket.addCorsRule({
+      allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+      allowedOrigins: ['http://localhost:5173', 'https://ds7f7bvhq6eaf.cloudfront.net'],
+      allowedHeaders: ['*'],
+    });
+
     const distro = new cloudfront.Distribution(this, 'CDN', {
       defaultBehavior: {
         origin: new origins.S3Origin(galleryBucket),
