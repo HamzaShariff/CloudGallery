@@ -9,3 +9,4 @@ frontend/dist/
 .cdk.staging
 cdk.out
 frontend/.env.local
+lib/*.jpg
