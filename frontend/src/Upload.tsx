@@ -1,35 +1,50 @@
-import { useRef } from 'react'
-import axios from 'axios'
+import { useRef } from 'react';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { useAuthenticator } from '@aws-amplify/ui-react';
+import axios from 'axios';
 
-export function Upload({ onDone }: { onDone: () => void }) {
-    const fileRef = useRef<HTMLInputElement>(null)
+interface Props {
+  onDone: () => void;
+  requireAuth: () => void;
+}
 
-    async function handleFiles(files: FileList | null) {
-        const file = files?.[0]
-        if (!file) return
-        
-        try {
-            const { data } = await axios.post(
-                import.meta.env.VITE_API_URL + 'images',
-                { contentType: file.type },
-                { headers: { 'Content-Type': 'application/json' } }
-            )
+export function Upload({ onDone, requireAuth }: Props) {
+  const { user } = useAuthenticator(ctx => [ctx.user]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-            await axios.put(data.uploadUrl, file, {
-                headers: { 'Content-Type': file.type }
-            })
+  async function handleFiles(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
 
-            onDone()
-        } catch (err) {
-            console.error(err)
-
-            alert('Upload failed')
-        } finally {
-            if (fileRef.current) fileRef.current.value = ''
-        }
+    if (!user) {
+      requireAuth();
+      return;
     }
 
-    return (
+    try {
+      const session  = await fetchAuthSession();
+      const idToken  = session.tokens?.idToken?.toString() ?? '';
+
+      const { data } = await axios.post(
+        import.meta.env.VITE_API_URL + 'images',
+        { contentType: file.type },
+        { headers: { Authorization: idToken } }
+      );
+
+      await axios.put(data.uploadUrl, file, {
+        headers: { 'Content-Type': file.type },
+      });
+
+      onDone();
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed');
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  return (
     <>
       <button
         type="button"
@@ -38,14 +53,13 @@ export function Upload({ onDone }: { onDone: () => void }) {
       >
         Upload
       </button>
-
       <input
+        hidden
         type="file"
         accept="image/*"
-        hidden
         ref={fileRef}
         onChange={e => handleFiles(e.target.files)}
       />
     </>
-  )
+  );
 }

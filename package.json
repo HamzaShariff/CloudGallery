@@ -24,5 +24,8 @@
   },
   "engines": {
     "aws-cdk": "2.122.0"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-cognito-identitypool-alpha": "^2.122.0-alpha.0"
   }
 }
