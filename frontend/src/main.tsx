@@ -8,7 +8,6 @@ import { awsConfig } from './awsConfig';
 import App from './App.tsx';
 
 Amplify.configure(awsConfig);
-Amplify.getConfig().Auth?.Cognito
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
