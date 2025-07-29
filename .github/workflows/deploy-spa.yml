@@ -10,6 +10,12 @@ permissions:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    env:
+        AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION:            ${{ secrets.AWS_REGION }}
+        SPA_BUCKET:              ${{ secrets.SPA_BUCKET }}
+        SPA_DISTRIBUTION_ID:     ${{ secrets.SPA_DISTRIBUTION_ID }}
 
     steps:
     - name: Checkout repo
@@ -34,18 +40,10 @@ jobs:
         npm run build
 
     - name: Sync to S3
-      env:
-        AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION:            ${{ secrets.AWS_REGION }}
       run: |
         aws s3 sync frontend/dist/ s3://$SPA_BUCKET/ --delete
 
     - name: Invalidate CloudFront cache
-      env:
-        AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION:            ${{ secrets.AWS_REGION }}
       run: |
         aws cloudfront create-invalidation \
           --distribution-id $SPA_DISTRIBUTION_ID \
