@@ -23,6 +23,8 @@ export class CloudGalleryStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
+    const oai = new cloudfront.OriginAccessIdentity(this, 'SpaOAI');
+
     /* ───────────── Storage & CDN ───────────── */
     const galleryBucket = new s3.Bucket(this, 'GalleryBucket', {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -53,11 +55,15 @@ export class CloudGalleryStack extends Stack {
 
     const distro = new cloudfront.Distribution(this, 'CDN', {
       defaultBehavior: {
-        origin: new origins.S3Origin(galleryBucket),
+        origin: new origins.S3Origin(galleryBucket, {
+          originAccessIdentity: oai,
+        }),
         compress: true,
       },
       defaultRootObject: 'index.html',
     });
+
+    galleryBucket.grantRead(oai);
 
     /* ───────────── Data table ──────────────── */
     const table = new dynamodb.Table(this, 'Images', {
