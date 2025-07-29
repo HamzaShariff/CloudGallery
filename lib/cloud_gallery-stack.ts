@@ -1,15 +1,15 @@
 import { Stack, StackProps, CfnOutput, RemovalPolicy, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
-import * as s3         from 'aws-cdk-lib/aws-s3';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins    from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as dynamodb   from 'aws-cdk-lib/aws-dynamodb';
-import * as lambda     from 'aws-cdk-lib/aws-lambda';
-import * as apigw      from 'aws-cdk-lib/aws-apigateway';
-import * as iam        from 'aws-cdk-lib/aws-iam';
-import * as s3n        from 'aws-cdk-lib/aws-s3-notifications';
-import * as cognito    from 'aws-cdk-lib/aws-cognito';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 
 import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import {
@@ -35,6 +35,20 @@ export class CloudGalleryStack extends Stack {
         'https://ds7f7bvhq6eaf.cloudfront.net',
       ],
       allowedHeaders: ['*'],
+    });
+
+    const spaBucket = new s3.Bucket(this, 'SpaBucket', {
+      websiteIndexDocument: 'index.html',
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const spaDistro = new cloudfront.Distribution(this, 'SpaCDN', {
+      defaultBehavior: {
+        origin: new origins.S3Origin(spaBucket),
+        compress: true,
+      },
+      defaultRootObject: 'index.html',
     });
 
     const distro = new cloudfront.Distribution(this, 'CDN', {
@@ -64,7 +78,7 @@ export class CloudGalleryStack extends Stack {
       oAuth: {
         flows: { implicitCodeGrant: true },
         callbackUrls: ['http://localhost:5173'],
-        logoutUrls:   ['http://localhost:5173'],
+        logoutUrls: ['http://localhost:5173'],
       },
     });
 
@@ -97,7 +111,7 @@ export class CloudGalleryStack extends Stack {
       handler: 'api.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambdas/api')),
       environment: {
-        TABLE:  table.tableName,
+        TABLE: table.tableName,
         BUCKET: galleryBucket.bucketName,
       },
       memorySize: 128,
@@ -107,12 +121,12 @@ export class CloudGalleryStack extends Stack {
     galleryBucket.grantPut(apiFn);
 
     const processFn = new PythonFunction(this, 'ProcessFn', {
-      entry:   path.join(__dirname, '../lambdas/process'),
+      entry: path.join(__dirname, '../lambdas/process'),
       runtime: lambda.Runtime.PYTHON_3_11,
-      index:   'process.py',
+      index: 'process.py',
       handler: 'handler',
       environment: {
-        TABLE:  table.tableName,
+        TABLE: table.tableName,
         BUCKET: galleryBucket.bucketName,
       },
       memorySize: 256,
@@ -122,7 +136,7 @@ export class CloudGalleryStack extends Stack {
     table.grantWriteData(processFn);
     processFn.addToRolePolicy(
       new iam.PolicyStatement({
-        actions:   ['rekognition:DetectLabels'],
+        actions: ['rekognition:DetectLabels'],
         resources: ['*'],
       }),
     );
@@ -152,12 +166,13 @@ export class CloudGalleryStack extends Stack {
 
     /* ───────────── Outputs ─────────────────── */
     new CfnOutput(this, 'GalleryBucketName', { value: galleryBucket.bucketName });
-    new CfnOutput(this, 'CDNDomainName',     { value: distro.domainName });
+    new CfnOutput(this, 'CDNDomainName', { value: distro.domainName });
     new CfnOutput(this, 'CDNDistributionId', { value: distro.distributionId });
-    new CfnOutput(this, 'ImageTablesName',   { value: table.tableName });
-    new CfnOutput(this, 'GalleryApiUrl',     { value: api.url });
-    new CfnOutput(this, 'UserPoolId',        { value: userPool.userPoolId });
-    new CfnOutput(this, 'UserPoolClientId',  { value: userClient.userPoolClientId });
-    new CfnOutput(this, 'IdentityPoolId',    { value: idPool.identityPoolId });
+    new CfnOutput(this, 'ImageTablesName', { value: table.tableName });
+    new CfnOutput(this, 'GalleryApiUrl', { value: api.url });
+    new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
+    new CfnOutput(this, 'UserPoolClientId', { value: userClient.userPoolClientId });
+    new CfnOutput(this, 'IdentityPoolId', { value: idPool.identityPoolId });
+    new CfnOutput(this, 'SpaURL', { value: `https://${spaDistro.domainName}` });
   }
 }

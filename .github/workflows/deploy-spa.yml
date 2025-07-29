@@ -1,0 +1,52 @@
+name: Deploy SPA
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install root deps
+      run: npm ci
+      
+    - name: Install frontend deps
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Build React SPA
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Sync to S3
+      env:
+        AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION:            ${{ secrets.AWS_REGION }}
+      run: |
+        aws s3 sync frontend/dist/ s3://$SPA_BUCKET/ --delete
+
+    - name: Invalidate CloudFront cache
+      env:
+        AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION:            ${{ secrets.AWS_REGION }}
+      run: |
+        aws cloudfront create-invalidation \
+          --distribution-id $SPA_DISTRIBUTION_ID \
+          --paths '/*'
