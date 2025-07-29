@@ -5,8 +5,9 @@ node_modules/
 .venv/
 .DS_Store
 frontend/dist/
-# CDK asset staging directory
 .cdk.staging
 cdk.out
 frontend/.env.local
 lib/*.jpg
+
+!frontend/src/vite-env.d.ts
