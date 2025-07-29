@@ -36,8 +36,13 @@ jobs:
 
     - name: Build React SPA
       env:
-        VITE_API_URL:  ${{ secrets.SPA_API_URL }}
-        VITE_CDN_DOMAIN: ${{ secrets.SPA_CDN_DOMAIN }}
+        VITE_REGION:             ${{ secrets.SPA_REGION }}
+        VITE_USER_POOL_ID:       ${{ secrets.SPA_USER_POOL_ID }}
+        VITE_USER_POOL_CLIENT_ID: ${{ secrets.SPA_USER_POOL_CLIENT_ID }}
+        VITE_ID_POOL_ID:         ${{ secrets.SPA_ID_POOL_ID }}
+        VITE_API_URL:           ${{ secrets.SPA_API_URL }}
+        VITE_CDN_DOMAIN:       ${{ secrets.SPA_CDN_DOMAIN }}
+        
       run: |
         cd frontend
         npm run build
