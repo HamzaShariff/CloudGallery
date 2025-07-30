@@ -34,15 +34,6 @@ jobs:
         cd frontend
         npm ci
 
-    - name: Show env picked up by Vite
-      run: |
-        cd frontend
-        echo "VITE_REGION: $VITE_REGION"
-        echo "VITE_USER_POOL_ID: $VITE_USER_POOL_ID"
-      env:
-        VITE_REGION:             ${{ secrets.SPA_REGION }}
-        VITE_USER_POOL_ID:       ${{ secrets.SPA_USER_POOL_ID }}
-
     - name: Build React SPA
       env:
         VITE_REGION:             ${{ secrets.SPA_REGION }}
