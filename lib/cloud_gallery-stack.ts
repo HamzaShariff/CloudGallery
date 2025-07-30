@@ -145,8 +145,7 @@ export class CloudGalleryStack extends Stack {
     );
     galleryBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED_PUT,
-      new s3n.LambdaDestination(processFn),
-      { suffix: '.jpg' },
+      new s3n.LambdaDestination(processFn)
     );
 
     /* ───────────── API Gateway ─────────────── */
