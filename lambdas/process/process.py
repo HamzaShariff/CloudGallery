@@ -35,6 +35,7 @@ def handler(event, _):
 
         jpeg_buf = io.BytesIO()
         rgb.save(jpeg_buf, format='JPEG', quality=90)
+        jpeg_buf.seek(0)
         labels_rsp = rek.detect_labels(
             Image={'Bytes': jpeg_buf.getvalue()},
             MaxLabels=5
